@@ -1,0 +1,132 @@
+---
+output: pdf_document
+---
+
+Stat 145 Exercise 2
+
+Name: Patience F. Ventura
+
+Student Number: 2019-08019
+
+\
+\
+Use the sale_app data (Sales of Appliances in Units Sold, Jan 2000 – Dec 2009) in PhilMonthlyData.csv.
+
+```{r}
+# Library
+library(fpp2)
+library(ggplot2)
+
+# Data
+PhilMonth <- read.csv("PhilMonthlyData.csv", header=TRUE)
+sales_app <- ts(na.omit(PhilMonth$sale_app), start=c(2000,1), end=c(2009,12), frequency=12)
+```
+
+Split the data into training and test data set: 
+Training dataset = Jan 2000 – Dec 2007; and 
+Test dataset = Jan 2008 – Dec 2009.
+
+```{r}
+train <- window(sales_app, end = c(2007, 12))
+test <- window(sales_app, start = c(2008,1), end = c(2009, 12))
+```
+
+
+Decide which of the following models are the best-fitting model based on the test error measures RMSE, MAPE, and MAE:
+
+\
+\
+a)	[1 pt] Seasonal Naïve method
+
+```{r, fig.height = 3, fig.width = 4}
+## Seasonal Naïve
+salesfit1 <- snaive(train,h=24)
+
+autoplot(sales_app) +
+  autolayer(salesfit1, series="Seasonal Naïve", PI=FALSE) +
+  xlab("Year") + ylab("units sold") +
+  ggtitle("Forecasts for Sales of Appliances") +
+  guides(colour=guide_legend(title="Forecast"))
+
+a1 <- accuracy(salesfit1, test)
+a1[,c("RMSE","MAPE","MAE")]
+```
+\
+\
+b)	[1.5 pts] Linear Trend and Seasonal Dummies Regression Model
+
+```{r, fig.height = 3, fig.width = 4}
+## Linear Trend and Seasonal Dummies Regression Model
+salesfit2 <- tslm(train ~ trend + season)
+summary(salesfit2)
+
+fcast <- forecast(salesfit2, h=24)
+
+autoplot(fcast) +
+ xlab("Year") + ylab("units sold") +
+ ggtitle("Forecasts for Sales of Appliances") +
+ guides(colour=guide_legend(title="Forecast"))
+```
+
+```{r}
+a2 <- accuracy(fcast, test)
+a2[,c("RMSE","MAPE","MAE")]
+```
+\
+\
+c)	[1.5 pts] Exponential Trend and Seasonal Dummies Regression Model
+
+```{r, fig.height = 3, fig.width = 4}
+fit.exp <- tslm(train ~ trend + season, lambda = 0)
+fcast.exp <- forecast(fit.exp, h = 24)
+
+autoplot(fcast.exp) +
+  xlab("Year") + ylab("unit sold") +
+  ggtitle("Forecasts for Sales of Appliances") +
+  guides(colour = guide_legend(title = "Forecast"))
+```
+```{r}
+a3 <- accuracy(fcast.exp, test)
+a3[,c("RMSE","MAPE","MAE")]
+```
+\
+\
+
+d)	[2 pts] Linear STL Model, t.window=13, s.window=13
+```{r, fig.height = 3, fig.width = 4}
+train %>%
+  stl(t.window=13, s.window=13, robust=TRUE) -> lin.stl
+
+lin.stl %>% seasadj() %>% naive() -> fcast.lin.stl
+```
+
+```{r}
+a4 <- accuracy(fcast.lin.stl, test)
+a4[,c("RMSE","MAPE","MAE")]
+```
+
+\
+\
+
+e)	[2 pts] Exponential Natural Cubic Smoothing Splines Model (splinef)
+
+```{r, fig.height = 3, fig.width = 4}
+train %>% splinef(lambda=0) -> fit.spline
+autoplot(fit.spline)+
+  xlab("Year") + ylab("unit sold") +
+  ggtitle("Forecasts for Sales of Appliances") +
+  guides(colour = guide_legend(title = "Forecast"))
+```
+
+```{r}
+a5 <- accuracy(fit.spline, test)
+a5[,c("RMSE","MAPE","MAE")]
+```
+
+\
+\
+Write a short paragraph explaining your choice of the best-fitting model. [2 pts]
+
+The best fitting model among the five forecast models would be the seasonal naive. Looking at the RMSE of the test set, it has the lowest value among them, which is 31692. Seasonal naive also has the smallest value among the models when you look at the values of MAE in the test dataset. The value of the seasonal naive with respect to MAE is 27185 but for linear trend, ETS, linear STL, and splinef, their MAE values are 33071. 28366, 61700, and 302684, respectively. The MAPE also agrees with the other two measurement errors because of the same reason that it has the smallest error. Thus, it could be said that seasonal naive is the best-fitting model.
+
+

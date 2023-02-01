@@ -1,0 +1,211 @@
+---
+output: pdf_document
+---
+Stat 145 Time Series Analysis and Forecasting
+
+Name: Patience F. Ventura
+
+Student Number: 2019-08019
+
+Exercise 1
+
+\
+```{r message=FALSE}
+library(fpp2)
+```
+
+
+1. [5 pts] Monthly Data (PhilMonthlyData.csv, available at UVLe): Please use from January 2000 to December 2009. Using the ofw_deployed (Number of OFW Deployed, in Persons) series, answer the following questions:
+
+```{r}
+# Data
+PhilMonth <- read.csv("PhilMonthlyData.csv", header=TRUE)
+ofw_deployed <- ts(na.omit(PhilMonth$ofw_deployed), start=c(2000,1), end=c(2009,12), frequency=12)
+```
+
+a. [1 pt] Using plots, describe in at least 2 sentences the trend and seasonality of the time series data.
+
+
+```{r, fig.height = 3, fig.width = 4}
+autoplot(ofw_deployed) + 
+  ggtitle("Deployed OFW from 2000 to 2009") + 
+  xlab("Year") +
+  ylab("in Persons")
+```
+
+```{r, fig.height = 3, fig.width = 4}
+ggseasonplot(ofw_deployed, year.labels=TRUE, year.labels.left=TRUE) +
+  ylab("in person") +
+  ggtitle("Seasonal plot: number of deployed OFW")
+```
+
+```{r, fig.height = 3, fig.width = 4}
+ggsubseriesplot(ofw_deployed) +
+ylab("in person") +
+ggtitle("Seasonal subseries plot: deployed OFW")
+```
+
+The graph of the number of deployed OFWs shows an increasing trend over the period of 2000 to 2009. There is also a  seasonality within each year. Based on the seasonal plot, there is a large jump in the number of deployed OFWs in January, possibly because they are going back to their place of work after the holiday season. Then, we would see a fluctuation in the following months which happens almost every year. There is a decrease during February-March and increase in April-May but eventually decrease in the next two months again. In August, there is a slight increase and then decreases in September-October and we see a slight increase in November. In December, the number of deployed OFWs decreased once again. The seasonal plot and seasonal subseries graph support these observations.
+
+
+\
+b. [1 pt] What Box-Cox transformation would achieve a stable variance for the data?
+
+\
+```{r, fig.height = 3, fig.width = 4}
+(lambda <- BoxCox.lambda(ofw_deployed))
+autoplot(BoxCox(ofw_deployed,lambda))
+```
+\
+A good value of $\lambda$ would be **0.0099** and this would achieve a stable variance for the data.
+
+
+\
+c. [3 pts] Split the data in which the most recent 2 years of data will be the test dataset. Using the forecasting approaches discussed in Chapter 3, which of the methods would best forecast the data? Explain your answer in at least 2 sentences.
+
+```{r, fig.height = 3, fig.width = 4}
+ofw_train <- window(ofw_deployed, end = c(2007, 12))
+
+## Mean Forecast
+ofwfit1 <- meanf(ofw_train,h=24)
+
+## Naive Forecast
+ofwfit2 <- rwf(ofw_train,h=24)
+
+## Seasonal Naive
+ofwfit3 <- snaive(ofw_train,h=24)
+
+## Drift 
+ofwfit4 <- rwf(ofw_train, drift = T, h=24)
+
+autoplot(ofw_deployed) +
+  autolayer(ofwfit1, series="Mean", PI=FALSE) +
+  autolayer(ofwfit2, series="Naïve", PI=FALSE) +
+  autolayer(ofwfit3, series="Seasonal naïve", PI=FALSE) +
+  autolayer(ofwfit4, series="Drift", PI=FALSE) +
+  xlab("Year") + ylab("In Person") +
+  ggtitle("Forecasts for Deployed OFW") +
+  guides(colour=guide_legend(title="Forecast"))
+```
+
+
+```{r, fig.height = 3, fig.width = 4}
+ofw_test <- tail(ofw_deployed, 12*2) #forecast errors
+
+accuracy(ofwfit1, ofw_test)
+accuracy(ofwfit2, ofw_test)
+accuracy(ofwfit3, ofw_test)
+accuracy(ofwfit4, ofw_test)
+```
+
+
+```{r, fig.height = 3, fig.width = 4}
+checkresiduals(meanf(ofw_train))
+checkresiduals(rwf(ofw_train))
+checkresiduals(snaive(ofw_train))
+checkresiduals(rwf(ofw_train, drift = T))
+```
+
+The  graph shows actual observations along with forecasts in the recent 2 years obtained from five different methods. The best method is **seasonal naïve method**. The drift, mean, and naïve methods are not good at forecasting the data when you compare it to the actual observations. On the other hand,  the seasonal naïve  can capture the fluctuation of data along with the season in each year. When you look at the forecast errors, seasonal naïve has the least values which would mean that it is the most accurate method (regardless of which accuracy measure was used). In addition, we can also inspect the residuals of the plots. The time plot shows that the variation of residuals stays much the same across the historical data for mean, drift, and naïve methods. We cannot say the same for the seasonal naïve. However, the ACF of the seasonal naïve shows significant spikes at lags 1, 12, and 21 but they are less significant than the spikes that appeared in the correlation plots of the other three methods. The histogram of the seasonal naïve also shows that it is the least skewed and looks closest to the histogram of a normal distribution. This adds evidence to the opinion that the seasonal naïve is the best method.
+
+
+
+
+
+
+\
+\
+2. [5pts] Quarterly Data (PhilQuarterData.csv, available at UVLe): Please use from Quarter 1 1994 to Quarter 4 2008. Using agri (Gross Value Added of Agriculture, Forestry, and Fisheries in the Philippines, in Million Php), answer for the following questions:
+
+```{r, fig.height = 3, fig.width = 4}
+PhilQuarter <- read.csv("PhilQuarterData.csv", header=TRUE)
+agri <- ts(na.omit(PhilQuarter$agri), start=c(1994,1), end=c(2008,4), frequency=4)
+```
+\
+a. [1 pt] Using plots, describe in at least 2 sentences the trend and seasonality of the time series data.
+
+```{r, fig.height = 3, fig.width = 4}
+autoplot(agri) + 
+  ggtitle("Gross Value Added of Agriculture, Forestry, and Fisheries in the Philippines") + 
+  xlab("Year") +
+  ylab("Million Php")
+```
+
+```{r, fig.height = 3, fig.width = 4}
+ggseasonplot(agri, year.labels=TRUE, year.labels.left=TRUE) +
+  ylab("Million Php") +
+  ggtitle("Seasonal plot: Gross Value Added of Agriculture, Forestry, and Fisheries in the Philippines")
+```
+
+```{r, fig.height = 3, fig.width = 4}
+ggsubseriesplot(agri) +
+ylab("Million Php") +
+ggtitle("Seasonal subseries plot: Gross Value Added of Agriculture, Forestry, and Fisheries in the Philippines")
+```
+
+There is an upward trend in the gross value added of Agriculture, Forestry, and Fisheries in the Philippines from 1994 to 2008. There is also a strong seasonality within each year, though 1994-2001 and 2002-2008 have different patterns. From the first quarter of 1994-2001, the GVA would increase in quarter 2, reach the lowest point in quarter 3, and then reach a high point in quarter 4. For the years 2002 to 2008, the GVA would decrease from quarter 1 until quarter 3 and then reach the peak in the fourth quarter.
+
+
+
+\
+b. [1 pts] What Box-Cox transformation would achieve a stable variance for the data?
+
+```{r, fig.height = 3, fig.width = 4}
+(lambda <- BoxCox.lambda(agri))
+autoplot(BoxCox(agri,lambda))
+```
+
+\
+A good value of $\lambda$ would be **-0.23** and this would achieve a stable variance for the data.
+
+\
+c. [3 pts] Split the data in which the most recent 4 years of data will be the test dataset. Using the forecasting approaches discussed in Chapter 3, which of the methods would best forecast the data? Explain your answer in at least 2 sentences.
+
+```{r, fig.height = 3, fig.width = 4}
+agri_train <- window(agri, end = c(2003, 4))
+
+## Mean Forecast
+agrifit1 <- meanf(agri_train,h=20)
+
+## Naive Forecast
+agrifit2 <- rwf(agri_train,h=20)
+
+## Seasonal Naive
+agrifit3 <- snaive(agri_train,h=20)
+
+## Drift 
+agrifit4 <- rwf(agri_train, drift = T, h=20)
+
+autoplot(agri) +
+  autolayer(agrifit1, series="Mean", PI=FALSE) +
+  autolayer(agrifit2, series="Naïve", PI=FALSE) +
+  autolayer(agrifit3, series="Seasonal naïve", PI=FALSE) +
+  autolayer(agrifit4, series="Drift", PI=FALSE) +
+  xlab("Year") + ylab("In Person") +
+  ggtitle("Forecasts for Deployed OFW") +
+  guides(colour=guide_legend(title="Forecast"))
+
+```
+
+
+```{r, fig.height = 3, fig.width = 4}
+agri_test <- tail(agri, 4*4) #forecast errors
+
+accuracy(agrifit1, agri_test)
+accuracy(agrifit2, agri_test)
+accuracy(agrifit3, agri_test)
+accuracy(agrifit4, agri_test)
+```
+
+
+```{r, fig.height = 3, fig.width = 4}
+
+checkresiduals(meanf(agri_train))
+checkresiduals(rwf(agri_train))
+checkresiduals(snaive(agri_train))
+checkresiduals(rwf(agri_train, drift = T))
+```
+
+
+The method that would best forecast the data is the **seasonal naïve** since it can dance along the seasonal pattern of the data. When you compare this to the mean, naïve, and drift methods, they are only flat or linear and therefore do not really give much information with regards to season. And when you investigate the forecast errors, you would see that the seasonal naïve and has low values of error (for all accuracy measures: RMSE, MAE, MAPE, MASE). This would mean that it is the method that performs best. We can further prove that it is the method that performs best based on the residual plots. Similar to the first problem, the time plots of the mean, drift, and naïve show that the variation stays much the same across the years and this is not the case for the seasonal plot. However, when you look at its correlogram of the seasonal naïve, all of the autocorrelation coefficients lie within the limits and that the autocorrelation is close to 0. In addition, the histogram shows that it could be slightly normal.
+

@@ -1,0 +1,134 @@
+---
+output: pdf_document
+---
+Stat 145 Exercise 4
+
+Name: Patience F. Ventura
+
+Student Number: 2019-08019
+\
+\
+I. Use the sale_app data (Total Sales of Appliance Units in the Philippines, Jan 2000 – Dec 2009) in PhilMonthlyData.csv. Split the data into training and test data set: 
+Training dataset = Jan 2000 – Dec 2007; and 
+Test dataset = Jan 2008 – Dec 2009.
+\
+\
+
+```{r}
+# Library
+library(fpp2)
+library(ggplot2)
+
+# Data
+PhilMonth <- read.csv("PhilMonthlyData.csv", header=TRUE)
+sales_app <- ts(na.omit(PhilMonth$sale_app), start=c(2000,1), end=c(2009,12), frequency=12)
+
+train <- window(sales_app, end = c(2007, 12))
+test <- window(sales_app, start = c(2008,1), end = c(2009, 12))
+```
+\
+
+1)	[2pts] Using the auto.arima() function, show the best performing model for the training dataset and show the equations form of the model with estimated parameter values plugged in (for reference, see the ARIMA(1,0,3) equation form in https://otexts.com/fpp2/non-seasonal-arima.html)
+
+```{r, fig.height = 3, fig.width = 4}
+autoplot(train) + 
+  ggtitle("Total Sales of Appliance Units in the Philippines") + 
+  xlab("Year") +
+  ylab("in units")
+ar.fit <- auto.arima(train, seasonal=FALSE, allowmean = TRUE)
+summary(ar.fit)
+```
+
+$$  y_t = c+ 0.9350y_{t-1}-0.8335y_{t-2}-1.2957\epsilon_{t-1}+0.7429\epsilon_{t-2} + \epsilon_t $$
+\
+where c =  (1-0.9350 + 0.8335) and $\epsilon_t$ is white noise with a standard deviation of  61986.21= $\sqrt{3842289688}$
+\
+\
+2)	[1pt] Based on the model in (1), show a plot of the forecasted value of sale_app for the test data added into the plot of the full dataset. Analyze the plot in terms of the forecasting performance of the selected model in (1)
+```{r, fig.height = 3, fig.width = 4}
+fcast.arima <- forecast(ar.fit,h=24)
+
+autoplot(fcast.arima) +
+  autolayer(sales_app, series = "Data") +
+  ylab("in Units")
+```
+\
+\
+The prediction interval becomes wider as time goes on. The forecast is slightly good because it can capture the fluctuation of data. As we could see in the graph, the actual data is within the interval of the forecast.
+
+\
+\
+3)	[1pt] Generate the accuracy measures of the selected model in (1) with respect to the testing dataset. Write a short analysis based on the accuracy measures.
+```{r}
+# refit <- Arima(test, model = ar.fit)
+# accuracy(refit)
+```
+\
+\
+4)	[1pt] Check the residuals of the selected model in (1). Has the selected model in (1) complied with the properties that residuals should have for full extraction of the patterns from the time series? Any recommendations?
+```{r, fig.height = 3, fig.width = 4}
+checkresiduals(ar.fit)
+```
+Based on the Ljung-Box test, it does not comply with the properties that residuals should have for full extraction of the patterns from the time series. The test rejected the null hypothesis that the model does not show lack of fit. In addition, there is significant autocorrelation based on the ACF.
+
+
+\
+\
+
+II. Use the volpal data (Volume of Palay Production, Q1 1994 – Q4 2008) in PhilQuarterData.csv. Split the data into training and test data set: 
+Training dataset = Q1 1994 – Q4 2005; and 
+Test dataset = Q1 2006 – Q4 2008.
+
+```{r, fig.height = 3, fig.width = 4}
+# Data
+PhilQuarter <- read.csv("PhilQuarterData.csv", header=TRUE)
+volpal <- ts(na.omit(PhilQuarter$volpal), start=c(1994,1), end=c(2008,4), frequency=4)
+
+train2 <- window(volpal, start = c(1994,1), end = c(2005, 4))
+test2 <- window(volpal, start = c(2006,1), end = c(2008, 4))
+```
+
+1)	[2pts] Using the auto.arima() function, show the best performing model for the training dataset and show the equations form of the model with estimated parameter values plugged in (for reference, see the ARIMA(1,0,3) equation form in https://otexts.com/fpp2/non-seasonal-arima.html)
+
+```{r, fig.height = 3, fig.width = 4}
+autoplot(train2) + 
+  ggtitle("Volume of Palay Production") + 
+  xlab("Year") +
+  ylab("volume")
+ar.fit2 <- auto.arima(train2, approximation=FALSE, stepwise = FALSE)
+summary(ar.fit2)
+```
+$$ y_t = 0.3044y_{t-1} \times (-0.5805)\times(25158.209) +\epsilon_t$$
+\
+where $\epsilon_t$ is  white noise with a standard deviation of 350856.98=$\sqrt{123100621311}$
+
+\
+
+2)	[1pt] Based on the model in (1), show a plot of the forecasted value of volpal for the test data added into the plot of the full dataset. Analyze the plot in terms of the forecasting performance of the selected model in (1)
+```{r, fig.height = 3, fig.width = 4}
+fcast.arima2 <- forecast(ar.fit2,h=12)
+
+autoplot(fcast.arima2) +
+  autolayer(volpal, series = "Data") +
+  ylab("volume")
+```
+\
+\
+The model was able to accurately forecast the future values, especially the seasonality of the data. The actual data was close to the mean of the prediction interval.
+\
+\
+
+3)	[1pt] Generate the accuracy measures of the selected model in (1) with respect to the testing dataset. Write a short analysis based on the accuracy measures.
+```{r}
+# refit2 <- Arima(test2, model = ar.fit2)
+# accuracy(refit2)
+```
+\
+
+4)	[1pt] Check the residuals of the selected model in (1). Has the selected model in (1) complied with the properties that residuals should have for full extraction of the patterns from the time series? Any recommendations?
+```{r, fig.height = 3, fig.width = 4}
+checkresiduals(ar.fit2)
+```
+\
+Based on the Ljung-Box test, it complies with the properties that residuals should have for full extraction of the patterns from the time series. The test did not reject the null hypothesis that the model does not show lack of fit. Thus, we can conclude that the residuals are not distinguishable from white noise. In addition, there is NO significant autocorrelation based on the ACF as all lags lie within the limits.
+

@@ -1,0 +1,144 @@
+---
+output: pdf_document
+---
+Stat 145 Exercise 3
+
+Name: Patience F. Ventura
+
+Student Number: 2019-08019
+\
+\
+I. Use the sale_app data (Total Sales of Appliance Units in the Philippines, Jan 2000 – Dec 2009) in PhilMonthlyData.csv. Split the data into training and test data set: 
+Training dataset = Jan 2000 – Dec 2007; and 
+Test dataset = Jan 2008 – Dec 2009.
+\
+
+```{r}
+# Library
+library(fpp2)
+library(ggplot2)
+
+# Data
+PhilMonth <- read.csv("PhilMonthlyData.csv", header=TRUE)
+sales_app <- ts(na.omit(PhilMonth$sale_app), start=c(2000,1), end=c(2009,12), frequency=12)
+
+train <- window(sales_app, end = c(2007, 12))
+test <- window(sales_app, start = c(2008,1), end = c(2009, 12))
+```
+
+1)	[2pts] Using the ets() function, show the best performing model based on the AICc of the training dataset and show the state space system of equations form of the model with estimated parameter values plugged in to the system of equation (for reference, see “Other ETS Models” in https://otexts.com/fpp2/ets.html)
+
+```{r, fig.height = 3, fig.width = 4}
+train %>% ets(model="ZZZ") -> mod
+fit.ets <- ets(train)
+summary(fit.ets)
+```
+
+$$ y_t = (l_{t-1} + b_{t-1}) s_{t-m}(1+\epsilon_t)$$
+$$l_t = (l_{t-1}+b_{t-1})(1+0.5734\epsilon_t)\\$$
+$$b_t=b_{t-1}+0.0139(l_{t-1}+b_{t_1})\epsilon_t\\$$
+$$s_t = s_{t-m}(1+2\times10^{-4}\times\epsilon_t)\\$$
+$$l_0 = 597464.3559 , b_0 = 1084.4734$$
+$$s_{initials}=(1.2361, 1.1346, 1.0226, 0.9175,\\ 0.9177, 0.9557,
+           1.0759, 1.1248,\\ 1.013, 0.9696, 0.8006, 0.832)$$
+\
+\
+2)	[1pt] Based on the model in (1), show a plot of the forecasted value of sale_app for the test data added into the plot of the full dataset. Analyze the plot in terms of the forecasting performance of the selected model in (1)
+```{r, fig.height = 3, fig.width = 4}
+fcast.ets <- forecast(fit.ets, h=24)
+
+autoplot(fcast.ets) +
+  autolayer(sales_app, series = "Data") +
+  ylab("in Units")
+```
+\
+\
+The prediction interval becomes quite wider as time goes on. The forecast is slightly good because it can capture the fluctuation of data. It could  grasp the seasonality of the previous years and incorporates them into the forecast. As we could see in the original data, it is able to capture the peaks within the season. The red line is within the interval of the forecast but is is already in the borderline of the interval.
+
+\
+\
+3)	[1pt] Generate the accuracy measures of the selected model in (1) with respect to the testing dataset. Write a short analysis based on the accuracy measures.
+```{r, fig.height = 3, fig.width = 4}
+accuracy(fcast.ets, test)
+```
+Based on the MAPE, the forecast on the test dataset is off by around 21.27 percentage points on average, in relation to the total sales. Based on the accuracy measures, the forecast is not that good because it has higher value of errors than the training set.
+
+
+\
+\
+4)	[1pt] Check the residuals of the selected model in (1). Has the selected model in (1) comply with the properties that residuals should have for full extraction of the patterns from the time series? Any recommendations?
+
+```{r, fig.height = 3, fig.width = 4}
+checkresiduals(mod)
+fcast.ets %>% residuals() %>% shapiro.test() -> st
+st
+```
+The time plot shows an outlier at around 2002 because of the peak in the graph, there is no remarkable changing variation over time. The autocorrelation plot also shows that the spike is not within limits. But based on the shapiro wilk test, the p-value is greater than 0.05. Hence, the distribution of the given data is not different from normal distribution significantly. Based on the Ljung-Box test, it does not comply with the properties that residuals should have for full extraction of the patterns from the time series. The test rejected the null hypothesis that the model does not show lack of fit. 
+
+
+
+
+\
+\
+II. Use the pce data (Quarterly Personal Consumption Expenditure, in Million Pesos, Q1 1981 – Q4 2008) in PhilQuarterData.csv. Split the data into training and test data set: 
+Training dataset = Q1 1981 – Q4 2005; and 
+Test dataset = Q1 2006 – Q4 2008.
+
+```{r, fig.height = 3, fig.width = 4}
+# Data
+PhilQuarter <- read.csv("PhilQuarterData.csv", header=TRUE)
+pce <- ts(na.omit(PhilQuarter$pce), start=c(1981,1), end=c(2008,4), frequency=4)
+
+train2 <- window(pce, start = c(1981,1), end = c(2005, 4))
+test2 <- window(pce, start = c(2006,1), end = c(2008, 4))
+```
+
+
+1)	[2pts] Using the ets() function, show the best performing model based on the AICc of the training dataset and show the state space system of equations form of the model with estimated parameter values plugged in to the system of equation (for reference, see “Other ETS Models” in https://otexts.com/fpp2/ets.html)
+
+```{r, fig.height = 3, fig.width = 4}
+train2 %>% ets(model="ZZZ") -> mod2
+fit.ets2 <- ets(train2)
+summary(fit.ets2)
+```
+$$ y_t = l_{t-1} + b_{t-1} +s_{t-m} + \epsilon_t $$
+$$ l_t = l_{t-1} + b_{t-1} + 0.3154\epsilon_t $$
+$$ b_t = b_{t-1} + 0.1138\epsilon_t $$ 
+$$ s_t = s_{t-m} + 0.5858\epsilon_t$$
+
+$$ l_0 = 101255.6841, b_0 = 548.7882  $$
+$$ s_{initials} = (14442.71, -2683.739, -980.3079, -10778.66) $$
+\
+\
+
+2)	[1pt] Based on the model in (1), show a plot of the forecasted value of pce for the test data added into the plot of the full dataset. Analyze the plot in terms of the forecasting performance of the selected model in (1)
+
+```{r, fig.height = 3, fig.width = 4}
+fcast.ets2 <- forecast(fit.ets2, h=12)
+
+autoplot(fcast.ets2) +
+  autolayer(pce, series = "Data") +
+  ylab("in Units")
+```
+\
+\
+The forecast was really good since it matches the pattern of the actual data. The forecast width was relatively narrow, but the forecast was able to accurately predict the future values. The forecast was able to follow both the trend and seasonality.
+\
+
+3)	[1pt] Generate the accuracy measures of the selected model in (1) with respect to the testing dataset. Write a short analysis based on the accuracy measures.
+
+```{r, fig.height = 3, fig.width = 4}
+accuracy(fcast.ets2, test2)
+```
+
+When you look at the MAPE, the values for the training and test set are pretty close to each other. Thus, the forecast is pretty accurate.
+\
+
+4)	[1pt] Check the residuals of the selected model in (1). Has the selected model in (1) comply with the properties that residuals should have for full extraction of the patterns from the time series? Any recommendations?
+
+```{r, fig.height = 3, fig.width = 4}
+checkresiduals(mod2)
+fcast.ets2 %>% residuals() %>% shapiro.test() -> st2
+st2
+```
+It is obvious from the plot that there is changing variation over time. The autocorrelation plot also shows that a few spikes are not within limits. The histogram and the shapiro-wilk test reveal that the residuals are normally distributed. Based on the Ljung-Box test, it does not comply with the properties that residuals should have for full extraction of patterns. The test rejected the null hypothesis that the model does not show lack of fit so the residuals are different from a white noise series.
